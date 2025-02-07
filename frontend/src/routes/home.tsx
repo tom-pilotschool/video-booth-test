@@ -26,6 +26,26 @@ export const HomePage = () => {
 		}
 	};
 
+	const stopVideo = async () => {
+		try {
+			const { data } = await axios.post(
+				"http://127.0.0.1:5000/stop_recording"
+			);
+			console.log(data);
+			toast({
+				title: "Video recording stopped",
+				description: "Video saved to video_output.h264",
+			});
+		} catch (error) {
+			console.error("Error recording video", error);
+			toast({
+				title: "Error stopping video",
+				description: "Please try again",
+				variant: "destructive",
+			});
+		}
+	};
+
 	// useEffect(() => {
 	// 	const videoElement = videoRef.current; // Store the ref in a variable
 
@@ -71,6 +91,7 @@ export const HomePage = () => {
 				}}
 			/> */}
 			<Button onClick={recordVideo}>Record Video</Button>
+			<Button onClick={stopVideo}>Stop Video</Button>
 		</div>
 	);
 };
