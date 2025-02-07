@@ -1,7 +1,30 @@
 import { useEffect, useRef } from "react";
-
+import axios from "axios";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 export const HomePage = () => {
 	const videoRef = useRef<HTMLVideoElement>(null);
+	const { toast } = useToast();
+
+	const recordVideo = async () => {
+		try {
+			const { data } = await axios.post(
+				"http://localhost:5000/start_recording"
+			);
+			console.log(data);
+			toast({
+				title: "Video recording started",
+				description: "Please wait for the video to finish recording",
+			});
+		} catch (error) {
+			console.error("Error recording video", error);
+			toast({
+				title: "Error recording video",
+				description: "Please try again",
+				variant: "destructive",
+			});
+		}
+	};
 
 	useEffect(() => {
 		const videoElement = videoRef.current; // Store the ref in a variable
@@ -47,6 +70,7 @@ export const HomePage = () => {
 					border: "1px solid #ccc",
 				}}
 			/>
+			<Button onClick={recordVideo}>Record Video</Button>
 		</div>
 	);
 };
