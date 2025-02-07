@@ -13,6 +13,8 @@ def record_video(duration=10, output_filename="video_output.h264"):
     # Start the camera
     picam2.start()
 
+    print(output_filename)
+
     # Start recording and provide the output filename
     picam2.start_recording(output_filename)
     print(f"Recording to {output_filename} for {duration} seconds...")
