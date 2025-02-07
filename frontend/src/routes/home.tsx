@@ -9,7 +9,7 @@ export const HomePage = () => {
 	const recordVideo = async () => {
 		try {
 			const { data } = await axios.post(
-				"http://localhost:5000/start_recording"
+				"http://127.0.0.1:5000/start_recording"
 			);
 			console.log(data);
 			toast({
