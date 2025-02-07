@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from picamera2.encoders import H264Encoder
 from picamera2 import Picamera2
 import time
 
@@ -13,10 +14,11 @@ def record_video(duration=10, output_filename="video_output.h264"):
     # Start the camera
     picam2.start()
 
-    print(output_filename)
+    encoder = H264Encoder(bitrate=10000000)
+    output = "test.h264"
 
     # Start recording and provide the output filename
-    picam2.start_recording(output_filename)
+    picam2.start_recording(encoder, output)
     print(f"Recording to {output_filename} for {duration} seconds...")
 
     time.sleep(duration)
