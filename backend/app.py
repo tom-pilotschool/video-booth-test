@@ -1,36 +1,87 @@
+#!/usr/bin/env python3
 from flask import Flask, jsonify, request
-import subprocess
+from picamera2 import Picamera2
+from picamera2.encoders import H264Encoder
+import threading
+import time
 
 app = Flask(__name__)
 
-# This variable will hold the subprocess that is recording video
-recording_process = None
+# Global variables to manage the camera and recording state.
+picam2 = None
+recording = False
+record_thread = None
+MAX_DURATION = 60  # Maximum recording time in seconds (1 minute)
+
+
+def record_video():
+    global picam2, recording
+    try:
+        # Initialize Picamera2 and configure it for 1080p recording.
+        picam2 = Picamera2()
+        video_config = picam2.create_video_configuration(
+            {"size": (1920, 1080)})
+        picam2.configure(video_config)
+
+        # Start the camera.
+        picam2.start()
+
+        # Create an H264 encoder with a specified bitrate.
+        encoder = H264Encoder(bitrate=10000000)
+        output = "test.h264"  # Output filename
+
+        # Start recording with the encoder and output filename.
+        picam2.start_recording(encoder, output)
+        print(f"Recording to {output}...")
+
+        start_time = time.time()
+        # Keep recording until 'recording' is set to False or max duration is reached.
+        while recording:
+            elapsed = time.time() - start_time
+            if elapsed >= MAX_DURATION:
+                print(
+                    "Maximum recording duration reached. Stopping recording automatically.")
+                recording = False
+                break
+            time.sleep(0.1)
+
+        # Stop recording and shut down the camera.
+        picam2.stop_recording()
+        picam2.stop()
+        print("Recording finished.")
+
+    except Exception as e:
+        print("Error in record_video:", e)
 
 
 @app.route('/start_recording', methods=['POST'])
-def start_recording():
-    global recording_process
-    if recording_process is not None:
-        return jsonify({'error': 'Recording already in progress'}), 400
+def start_recording_endpoint():
+    global recording, record_thread
+    if recording:
+        return jsonify({'status': 'already recording'}), 400
 
-    # Example: Launch a Python script that handles video recording natively.
-    # Adjust the command to suit your script/requirements.
-    recording_process = subprocess.Popen(['python3', 'record_video.py'])
-    return jsonify({'status': 'Recording started'}), 200
+    recording = True
+    # Start the recording in a background thread.
+    record_thread = threading.Thread(target=record_video)
+    record_thread.start()
+    return jsonify({'status': 'recording started'}), 200
 
 
 @app.route('/stop_recording', methods=['POST'])
-def stop_recording():
-    global recording_process
-    if recording_process is None:
-        return jsonify({'error': 'No recording in progress'}), 400
+def stop_recording_endpoint():
+    global recording, record_thread
+    if not recording:
+        return jsonify({'status': 'not recording'}), 400
 
-    # Terminate the recording process. You might need to implement a more graceful shutdown.
-    recording_process.terminate()
-    recording_process = None
-    return jsonify({'status': 'Recording stopped and saved'}), 200
+    # Signal the recording thread to stop.
+    recording = False
+
+    # Optionally, wait for the recording thread to finish.
+    if record_thread is not None:
+        record_thread.join()
+    return jsonify({'status': 'recording stopped'}), 200
 
 
 if __name__ == '__main__':
-    # Listen on all interfaces or restrict to localhost if needed
+    # Run the Flask app on all network interfaces.
     app.run(host='0.0.0.0', port=5000)
